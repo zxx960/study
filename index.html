@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>太阳系运行动画 - Solar System Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 5px;
+            max-width: 300px;
+        }
+        #info h1 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        #info p {
+            margin: 5px 0;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>🌌 太阳系运行动画</h1>
+        <p>🖱️ 鼠标拖动旋转视角</p>
+        <p>🔍 滚轮缩放距离</p>
+        <p>⭐ 包含太阳和八大行星</p>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // 场景、相机、渲染器
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 添加星空背景
+        const starGeometry = new THREE.BufferGeometry();
+        const starVertices = [];
+        for (let i = 0; i < 10000; i++) {
+            const x = (Math.random() - 0.5) * 4000;
+            const y = (Math.random() - 0.5) * 4000;
+            const z = (Math.random() - 0.5) * 4000;
+            starVertices.push(x, y, z);
+        }
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 2 });
+        const stars = new THREE.Points(starGeometry, starMaterial);
+        scene.add(stars);
+
+        // 创建太阳
+        const sunGeometry = new THREE.SphereGeometry(30, 32, 32);
+        const sunMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0xffff00,
+            emissive: 0xffaa00
+        });
+        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        scene.add(sun);
+
+        // 添加太阳光
+        const sunLight = new THREE.PointLight(0xffffff, 2, 1000);
+        sunLight.position.set(0, 0, 0);
+        scene.add(sunLight);
+
+        // 环境光
+        const ambientLight = new THREE.AmbientLight(0x333333);
+        scene.add(ambientLight);
+
+        // 行星数据: [名称, 半径, 颜色, 轨道半径, 公转速度, 自转速度]
+        const planetsData = [
+            ['水星', 3.5, 0x8c7853, 60, 0.04, 0.01],
+            ['金星', 8, 0xffc649, 85, 0.015, 0.005],
+            ['地球', 8.5, 0x4169e1, 110, 0.01, 0.02],
+            ['火星', 5, 0xcd5c5c, 140, 0.008, 0.018],
+            ['木星', 20, 0xdaa520, 200, 0.002, 0.04],
+            ['土星', 17, 0xf4a460, 260, 0.0009, 0.038],
+            ['天王星', 12, 0x4fd0e0, 320, 0.0004, 0.03],
+            ['海王星', 11, 0x4169e1, 370, 0.0001, 0.032]
+        ];
+
+        const planets = [];
+        const orbits = [];
+
+        // 创建行星和轨道
+        planetsData.forEach(([name, radius, color, orbitRadius, revolutionSpeed, rotationSpeed]) => {
+            // 创建轨道线
+            const orbitGeometry = new THREE.BufferGeometry();
+            const orbitPoints = [];
+            for (let i = 0; i <= 128; i++) {
+                const angle = (i / 128) * Math.PI * 2;
+                orbitPoints.push(
+                    Math.cos(angle) * orbitRadius,
+                    0,
+                    Math.sin(angle) * orbitRadius
+                );
+            }
+            orbitGeometry.setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
+            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x444444 });
+            const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+            scene.add(orbit);
+            orbits.push(orbit);
+
+            // 创建行星
+            const planetGeometry = new THREE.SphereGeometry(radius, 32, 32);
+            const planetMaterial = new THREE.MeshStandardMaterial({ 
+                color: color,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            const planet = new THREE.Mesh(planetGeometry, planetMaterial);
+            
+            // 创建行星容器用于公转
+            const planetContainer = new THREE.Object3D();
+            planet.position.x = orbitRadius;
+            planetContainer.add(planet);
+            scene.add(planetContainer);
+
+            planets.push({
+                mesh: planet,
+                container: planetContainer,
+                revolutionSpeed: revolutionSpeed,
+                rotationSpeed: rotationSpeed,
+                orbitRadius: orbitRadius
+            });
+
+            // 为土星添加光环
+            if (name === '土星') {
+                const ringGeometry = new THREE.RingGeometry(radius * 1.5, radius * 2.5, 32);
+                const ringMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xc9b181,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+                ring.rotation.x = Math.PI / 2;
+                planet.add(ring);
+            }
+        });
+
+        // 相机位置
+        camera.position.set(0, 150, 400);
+        camera.lookAt(0, 0, 0);
+
+        // 鼠标控制
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraAngle = { theta: 0, phi: Math.PI / 6 };
+        let cameraDistance = 400;
+
+        renderer.domElement.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                cameraAngle.theta += deltaX * 0.005;
+                cameraAngle.phi += deltaY * 0.005;
+                
+                // 限制垂直角度
+                cameraAngle.phi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraAngle.phi));
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        renderer.domElement.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        renderer.domElement.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            cameraDistance += e.deltaY * 0.2;
+            cameraDistance = Math.max(100, Math.min(1000, cameraDistance));
+        });
+
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 更新相机位置
+            camera.position.x = cameraDistance * Math.sin(cameraAngle.phi) * Math.cos(cameraAngle.theta);
+            camera.position.y = cameraDistance * Math.cos(cameraAngle.phi);
+            camera.position.z = cameraDistance * Math.sin(cameraAngle.phi) * Math.sin(cameraAngle.theta);
+            camera.lookAt(0, 0, 0);
+
+            // 太阳自转
+            sun.rotation.y += 0.001;
+
+            // 行星公转和自转
+            planets.forEach(planet => {
+                // 公转
+                planet.container.rotation.y += planet.revolutionSpeed;
+                // 自转
+                planet.mesh.rotation.y += planet.rotationSpeed;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
