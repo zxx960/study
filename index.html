@@ -37,6 +37,18 @@
             margin: 5px 0;
             font-size: 12px;
         }
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+            border: 1px solid #555;
+        }
     </style>
 </head>
 <body>
@@ -45,7 +57,9 @@
         <p>🖱️ 鼠标拖动旋转视角</p>
         <p>🔍 滚轮缩放距离</p>
         <p>⭐ 包含太阳和八大行星</p>
+        <p>💫 鼠标悬停查看星球名称</p>
     </div>
+    <div id="tooltip"></div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -77,6 +91,7 @@
             emissive: 0xffaa00
         });
         const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+        sun.userData = { name: '太阳' };
         scene.add(sun);
 
         // 添加太阳光
@@ -137,6 +152,9 @@
             planetContainer.add(planet);
             scene.add(planetContainer);
 
+            // 设置行星名称
+            planet.userData = { name: name };
+            
             planets.push({
                 mesh: planet,
                 container: planetContainer,
@@ -164,11 +182,19 @@
         camera.position.set(0, 150, 400);
         camera.lookAt(0, 0, 0);
 
-        // 鼠标控制
+        // 鼠标控制和射线检测
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         let cameraAngle = { theta: 0, phi: Math.PI / 6 };
         let cameraDistance = 400;
+        
+        // 射线检测器
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const tooltip = document.getElementById('tooltip');
+        
+        // 收集所有可以检测的星球（太阳 + 行星）
+        const celestialBodies = [sun, ...planets.map(p => p.mesh)];
 
         renderer.domElement.addEventListener('mousedown', (e) => {
             isDragging = true;
@@ -187,6 +213,27 @@
                 cameraAngle.phi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraAngle.phi));
                 
                 previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+            
+            // 射线检测悬停
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(celestialBodies);
+            
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                if (object.userData.name) {
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = e.clientX + 10 + 'px';
+                    tooltip.style.top = e.clientY - 30 + 'px';
+                    tooltip.textContent = object.userData.name;
+                    document.body.style.cursor = 'pointer';
+                }
+            } else {
+                tooltip.style.display = 'none';
+                document.body.style.cursor = 'default';
             }
         });
 
