@@ -113,6 +113,30 @@
         #planet-card .close-btn:hover {
             background: rgba(255, 255, 255, 0.1);
         }
+        #pause-btn {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            background: rgba(74, 144, 226, 0.9);
+            color: white;
+            border: 2px solid #4a90e2;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        #pause-btn:hover {
+            background: rgba(74, 144, 226, 1);
+            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.6);
+            transform: scale(1.05);
+        }
+        #pause-btn:active {
+            transform: scale(0.95);
+        }
     </style>
 </head>
 <body>
@@ -129,6 +153,7 @@
         <button class="close-btn" onclick="closePlanetCard()">×</button>
         <div id="planet-card-content"></div>
     </div>
+    <button id="pause-btn" onclick="togglePause()">⏸️ 暂停</button>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -350,6 +375,7 @@
         let previousMousePosition = { x: 0, y: 0 };
         let cameraAngle = { theta: 0, phi: 0.1 };
         let cameraDistance = 600;
+        let isPaused = false;
         
         // 射线检测器
         const raycaster = new THREE.Raycaster();
@@ -471,6 +497,17 @@
             card.classList.remove('show');
         }
 
+        // 切换暂停/播放
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = document.getElementById('pause-btn');
+            if (isPaused) {
+                btn.textContent = '▶️ 播放';
+            } else {
+                btn.textContent = '⏸️ 暂停';
+            }
+        }
+
         // 窗口大小调整
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -488,16 +525,19 @@
             camera.position.z = cameraDistance * Math.sin(cameraAngle.phi) * Math.sin(cameraAngle.theta);
             camera.lookAt(0, 0, 0);
 
-            // 太阳自转
-            sun.rotation.y += 0.001;
+            // 只有在未暂停时才更新星球运动
+            if (!isPaused) {
+                // 太阳自转
+                sun.rotation.y += 0.001;
 
-            // 行星公转和自转
-            planets.forEach(planet => {
-                // 公转
-                planet.container.rotation.y += planet.revolutionSpeed;
-                // 自转
-                planet.mesh.rotation.y += planet.rotationSpeed;
-            });
+                // 行星公转和自转
+                planets.forEach(planet => {
+                    // 公转
+                    planet.container.rotation.y += planet.revolutionSpeed;
+                    // 自转
+                    planet.mesh.rotation.y += planet.rotationSpeed;
+                });
+            }
 
             renderer.render(scene, camera);
         }
