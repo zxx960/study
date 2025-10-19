@@ -49,6 +49,70 @@
             z-index: 1000;
             border: 1px solid #555;
         }
+        #planet-card {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 20, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 320px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+            border: 2px solid #4a90e2;
+            box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+        }
+        #planet-card.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        #planet-card h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #4a90e2;
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 10px;
+        }
+        #planet-card .info-item {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        #planet-card .info-label {
+            font-weight: bold;
+            color: #88b3e6;
+        }
+        #planet-card .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+            text-align: center;
+            border-radius: 50%;
+        }
+        #planet-card .close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -58,8 +122,13 @@
         <p>🔍 滚轮缩放距离</p>
         <p>⭐ 包含太阳和八大行星</p>
         <p>💫 鼠标悬停查看星球名称</p>
+        <p>🌍 点击星球查看详细信息</p>
     </div>
     <div id="tooltip"></div>
+    <div id="planet-card">
+        <button class="close-btn" onclick="closePlanetCard()">×</button>
+        <div id="planet-card-content"></div>
+    </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -102,6 +171,100 @@
         // 环境光
         const ambientLight = new THREE.AmbientLight(0x333333);
         scene.add(ambientLight);
+
+        // 星球详细信息数据
+        const celestialInfo = {
+            '太阳': {
+                name: '太阳',
+                type: '恒星',
+                diameter: '1,392,700 公里',
+                mass: '地球的 333,000 倍',
+                temperature: '表面温度约 5,500°C',
+                composition: '主要由氢和氦组成',
+                description: '太阳是太阳系的中心天体，占有太阳系总质量的99.86%。它是一颗黄矮星，通过核聚变反应产生能量。',
+                features: ['光球层温度约500万度', '每秒钟20万吨氢转化为氦', '寿命约100亿年']
+            },
+            '水星': {
+                name: '水星',
+                type: '类地行星',
+                diameter: '4,879 公里',
+                mass: '地球的 0.055 倍',
+                temperature: '-173°C 至 427°C',
+                orbitalPeriod: '公转周期 88 天',
+                description: '水星是太阳系最小的行星，也是离太阳最近的行星。由于没有大气层，水星表面温度变化很大。',
+                features: ['表面布满陨石坑', '有一个铁核', '几乎没有大气层']
+            },
+            '金星': {
+                name: '金星',
+                type: '类地行星',
+                diameter: '12,104 公里',
+                mass: '地球的 0.815 倍',
+                temperature: '表面温度约 462°C',
+                orbitalPeriod: '公转周期 225 天',
+                description: '金星是从太阳向外的第二颗行星，是太阳系中最热的行星。浓厚的大气层产生强烈的温室效应。',
+                features: ['逆向自转', '浓厚的二氧化碳大气', '最亮的行星']
+            },
+            '地球': {
+                name: '地球',
+                type: '类地行星',
+                diameter: '12,742 公里',
+                mass: '5.972 × 10²⁴ 千克',
+                temperature: '平均温度 15°C',
+                orbitalPeriod: '公转周期 365.25 天',
+                description: '地球是太阳系中唯一确认存在生命的行星。有71%的表面被水覆盖，具有适宜生命的大气层。',
+                features: ['唯一有生命的星球', '卫星：月球', '液态水大量存在']
+            },
+            '火星': {
+                name: '火星',
+                type: '类地行星',
+                diameter: '6,779 公里',
+                mass: '地球的 0.107 倍',
+                temperature: '平均温度 -63°C',
+                orbitalPeriod: '公转周期 687 天',
+                description: '火星被称为"红色星球"，是下一个人类探索目标。表面有太阳系最大的山峰和峡谷。',
+                features: ['表面氧化铁呈红色', '有两颗小卫星', '极冠由冰组成']
+            },
+            '木星': {
+                name: '木星',
+                type: '气态巨行星',
+                diameter: '139,820 公里',
+                mass: '地球的 318 倍',
+                temperature: '云顶温度 -145°C',
+                orbitalPeriod: '公转周期 11.86 年',
+                description: '木星是太阳系最大的行星，主要由氢和氦组成。具有强大的磁场和79颗已知卫星。',
+                features: ['大红斑风暴', '有微弱的行星环', '79颗已知卫星']
+            },
+            '土星': {
+                name: '土星',
+                type: '气态巨行星',
+                diameter: '116,460 公里',
+                mass: '地球的 95 倍',
+                temperature: '云顶温度 -178°C',
+                orbitalPeriod: '公转周期 29.46 年',
+                description: '土星以其壮观的行星环系统而闻名，主要由冰颗粒和尘埃组成。密度比水还小。',
+                features: ['壮观的行星环', '82颗已知卫星', '密度最小的行星']
+            },
+            '天王星': {
+                name: '天王星',
+                type: '冰巨行星',
+                diameter: '50,724 公里',
+                mass: '地球的 14.5 倍',
+                temperature: '云顶温度 -224°C',
+                orbitalPeriod: '公转周期 84 年',
+                description: '天王星是第一颗通过望远镜发现的行星。它的自转轴几乎与公转轨道平面平行。',
+                features: ['横向自转', '有淡蓝色外观', '27颗已知卫星']
+            },
+            '海王星': {
+                name: '海王星',
+                type: '冰巨行星',
+                diameter: '49,244 公里',
+                mass: '地球的 17 倍',
+                temperature: '云顶温度 -214°C',
+                orbitalPeriod: '公转周期 165 年',
+                description: '海王星是太阳系最外侧的行星，通过数学预测而发现。具有太阳系最强的风暴。',
+                features: ['深蓝色外观', '最强风速超过2000km/h', '14颗已知卫星']
+            }
+        };
 
         // 行星数据: [名称, 半径, 颜色, 轨道半径, 公转速度, 自转速度]
         const planetsData = [
@@ -179,14 +342,14 @@
         });
 
         // 相机位置
-        camera.position.set(0, 150, 400);
+        camera.position.set(0, 600, 0);
         camera.lookAt(0, 0, 0);
 
         // 鼠标控制和射线检测
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
-        let cameraAngle = { theta: 0, phi: Math.PI / 6 };
-        let cameraDistance = 400;
+        let cameraAngle = { theta: 0, phi: 0.1 };
+        let cameraDistance = 600;
         
         // 射线检测器
         const raycaster = new THREE.Raycaster();
@@ -241,11 +404,72 @@
             isDragging = false;
         });
 
+        // 点击事件监听
+        renderer.domElement.addEventListener('click', (e) => {
+            // 只有在未拖动时才响应点击
+            if (!isDragging) {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(celestialBodies);
+                
+                if (intersects.length > 0) {
+                    const object = intersects[0].object;
+                    if (object.userData.name) {
+                        showPlanetCard(object.userData.name);
+                    }
+                }
+            }
+        });
+
         renderer.domElement.addEventListener('wheel', (e) => {
             e.preventDefault();
             cameraDistance += e.deltaY * 0.2;
             cameraDistance = Math.max(100, Math.min(1000, cameraDistance));
         });
+
+        // 显示星球知识卡片
+        function showPlanetCard(planetName) {
+            const info = celestialInfo[planetName];
+            if (!info) return;
+            
+            const card = document.getElementById('planet-card');
+            const content = document.getElementById('planet-card-content');
+            
+            let html = `<h2>${info.name}</h2>`;
+            html += `<div class="info-item"><span class="info-label">类型：</span>${info.type}</div>`;
+            html += `<div class="info-item"><span class="info-label">直径：</span>${info.diameter}</div>`;
+            html += `<div class="info-item"><span class="info-label">质量：</span>${info.mass}</div>`;
+            html += `<div class="info-item"><span class="info-label">温度：</span>${info.temperature}</div>`;
+            
+            if (info.orbitalPeriod) {
+                html += `<div class="info-item"><span class="info-label">公转：</span>${info.orbitalPeriod}</div>`;
+            }
+            if (info.composition) {
+                html += `<div class="info-item"><span class="info-label">组成：</span>${info.composition}</div>`;
+            }
+            
+            html += `<div class="info-item" style="margin-top: 15px;">${info.description}</div>`;
+            
+            if (info.features && info.features.length > 0) {
+                html += `<div class="info-item" style="margin-top: 15px;"><span class="info-label">特点：</span></div>`;
+                html += '<ul style="margin-left: 20px; margin-top: 5px;">';
+                info.features.forEach(feature => {
+                    html += `<li>${feature}</li>`;
+                });
+                html += '</ul>';
+            }
+            
+            content.innerHTML = html;
+            card.classList.add('show');
+        }
+
+        // 关闭星球知识卡片
+        function closePlanetCard() {
+            const card = document.getElementById('planet-card');
+            card.classList.remove('show');
+        }
 
         // 窗口大小调整
         window.addEventListener('resize', () => {
