@@ -3,546 +3,407 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>太阳系运行动画 - Solar System Animation</title>
+    <title>教学案例集合 - Interactive Learning Hub</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
+
         body {
-            overflow: hidden;
-            background: #000;
-            font-family: Arial, sans-serif;
-        }
-        canvas {
-            display: block;
-        }
-        #info {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            font-size: 14px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 5px;
-            max-width: 300px;
-        }
-        #info h1 {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        #info p {
-            margin: 5px 0;
-            font-size: 12px;
-        }
-        #tooltip {
-            position: absolute;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 14px;
-            pointer-events: none;
-            display: none;
-            z-index: 1000;
-            border: 1px solid #555;
-        }
-        #planet-card {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 20, 0.9);
-            color: white;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #fef5e7 0%, #fdf3e3 50%, #fce8d5 100%);
+            min-height: 100vh;
             padding: 20px;
-            border-radius: 10px;
-            width: 320px;
-            max-height: 80vh;
-            overflow-y: auto;
-            display: none;
-            z-index: 1000;
-            border: 2px solid #4a90e2;
-            box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+            position: relative;
+            overflow-x: hidden;
         }
-        #planet-card.show {
-            display: block;
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        #planet-card h2 {
-            font-size: 24px;
-            margin-bottom: 15px;
-            color: #4a90e2;
-            border-bottom: 2px solid #4a90e2;
-            padding-bottom: 10px;
-        }
-        #planet-card .info-item {
-            margin: 10px 0;
-            line-height: 1.6;
-        }
-        #planet-card .info-label {
-            font-weight: bold;
-            color: #88b3e6;
-        }
-        #planet-card .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 24px;
-            cursor: pointer;
-            padding: 0;
-            width: 30px;
-            height: 30px;
-            line-height: 30px;
-            text-align: center;
+
+        /* 装饰性背景元素 */
+        .bg-decoration {
+            position: fixed;
             border-radius: 50%;
+            opacity: 0.15;
+            z-index: 0;
         }
-        #planet-card .close-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+
+        .bg-decoration.circle1 {
+            width: 300px;
+            height: 300px;
+            background: #ff9a76;
+            top: -100px;
+            right: -100px;
+            animation: float 8s ease-in-out infinite;
         }
-        #pause-btn {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            background: rgba(74, 144, 226, 0.9);
+
+        .bg-decoration.circle2 {
+            width: 250px;
+            height: 250px;
+            background: #86c8bc;
+            bottom: -80px;
+            left: -80px;
+            animation: float 10s ease-in-out infinite;
+        }
+
+        .bg-decoration.circle3 {
+            width: 200px;
+            height: 200px;
+            background: #ffcc5c;
+            top: 40%;
+            right: 10%;
+            animation: float 12s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(30px); }
+        }
+
+        /* 容器 */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 头部 */
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px 20px;
+        }
+
+        .logo {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff9a76 0%, #ff7e5f 100%);
             color: white;
-            border: 2px solid #4a90e2;
-            padding: 15px 30px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+            width: 80px;
+            height: 80px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 30px rgba(255, 126, 95, 0.3);
+            transform: rotate(-5deg);
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: rotate(0deg) scale(1.05);
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #5d4037;
+            margin-bottom: 15px;
+            font-weight: 700;
+            position: relative;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #ff9a76, #ffcc5c);
+            border-radius: 2px;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #8d6e63;
+            margin-top: 25px;
+            font-weight: 300;
+        }
+
+        /* 案例网格 */
+        .cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        /* 案例卡片 */
+        .case-card {
+            background: white;
+            border-radius: 25px;
+            padding: 30px;
+            box-shadow: 0 8px 30px rgba(93, 64, 55, 0.08);
             transition: all 0.3s ease;
-            z-index: 1000;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid transparent;
         }
-        #pause-btn:hover {
-            background: rgba(74, 144, 226, 1);
-            box-shadow: 0 6px 20px rgba(74, 144, 226, 0.6);
+
+        .case-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(135deg, #ff9a76, #ffcc5c, #86c8bc);
+            border-radius: 25px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .case-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 40px rgba(93, 64, 55, 0.15);
+        }
+
+        .case-card:hover::before {
+            opacity: 1;
+        }
+
+        .case-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .case-card:nth-child(1) .case-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .case-card:nth-child(2) .case-icon {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 8px 20px rgba(240, 147, 251, 0.3);
+        }
+
+        .case-card:nth-child(3) .case-icon {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .case-title {
+            font-size: 24px;
+            color: #5d4037;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .case-title-en {
+            font-size: 14px;
+            color: #a1887f;
+            margin-bottom: 15px;
+            font-weight: 400;
+        }
+
+        .case-description {
+            font-size: 15px;
+            color: #8d6e63;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .case-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .tag {
+            background: #fef5e7;
+            color: #8d6e63;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 2px solid #fce8d5;
+        }
+
+        .case-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #ff9a76 0%, #ff7e5f 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 15px;
+            font-size: 15px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 126, 95, 0.3);
+        }
+
+        .case-link:hover {
             transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255, 126, 95, 0.4);
         }
-        #pause-btn:active {
-            transform: scale(0.95);
+
+        .case-link::after {
+            content: '→';
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .case-link:hover::after {
+            transform: translateX(4px);
+        }
+
+        /* 页脚 */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #8d6e63;
+            font-size: 14px;
+        }
+
+        footer a {
+            color: #ff9a76;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 36px;
+            }
+
+            .subtitle {
+                font-size: 18px;
+            }
+
+            .cases-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .case-card {
+                padding: 25px;
+            }
+        }
+
+        /* 添加更多装饰元素 */
+        .doodle {
+            position: fixed;
+            opacity: 0.1;
+            z-index: 0;
+            animation: doodleFloat 15s ease-in-out infinite;
+        }
+
+        @keyframes doodleFloat {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(10px, -10px) rotate(5deg); }
+            50% { transform: translate(-5px, -20px) rotate(-5deg); }
+            75% { transform: translate(-10px, -10px) rotate(3deg); }
         }
     </style>
 </head>
 <body>
-    <div id="info">
-        <h1>🌌 太阳系运行动画</h1>
-        <p>🖱️ 鼠标拖动旋转视角</p>
-        <p>🔍 滚轮缩放距离</p>
-        <p>⭐ 包含太阳和八大行星</p>
-        <p>💫 鼠标悬停查看星球名称</p>
-        <p>🌍 点击星球查看详细信息</p>
+    <!-- 背景装饰 -->
+    <div class="bg-decoration circle1"></div>
+    <div class="bg-decoration circle2"></div>
+    <div class="bg-decoration circle3"></div>
+
+    <div class="container">
+        <!-- 头部 -->
+        <header>
+            <div class="logo">📚</div>
+            <h1>教学案例集合</h1>
+            <p class="subtitle">Interactive Learning Hub - 探索有趣的编程世界</p>
+        </header>
+
+        <!-- 案例网格 -->
+        <div class="cases-grid">
+            <!-- 太阳系动画案例 -->
+            <div class="case-card">
+                <div class="case-icon">🪐</div>
+                <h3 class="case-title">太阳系运行动画</h3>
+                <p class="case-title-en">Solar System Animation</p>
+                <p class="case-description">
+                    使用 Three.js 创建的交互式 3D 太阳系模拟，包含太阳和八大行星的真实运行轨迹，支持鼠标交互控制。
+                </p>
+                <div class="case-tags">
+                    <span class="tag">Three.js</span>
+                    <span class="tag">WebGL</span>
+                    <span class="tag">3D</span>
+                </div>
+                <a href="./cases/solar-system/index.html" class="case-link">
+                    查看案例
+                </a>
+            </div>
+
+            <!-- 示例卡片 2 - 可以添加更多案例 -->
+            <div class="case-card">
+                <div class="case-icon">🎨</div>
+                <h3 class="case-title">即将推出</h3>
+                <p class="case-title-en">Coming Soon</p>
+                <p class="case-description">
+                    更多精彩的教学案例正在开发中，敬请期待！
+                </p>
+                <div class="case-tags">
+                    <span class="tag">Canvas</span>
+                    <span class="tag">动画</span>
+                </div>
+                <a href="#" class="case-link" style="opacity: 0.5; pointer-events: none;">
+                    敬请期待
+                </a>
+            </div>
+
+            <!-- 示例卡片 3 -->
+            <div class="case-card">
+                <div class="case-icon">🎮</div>
+                <h3 class="case-title">即将推出</h3>
+                <p class="case-title-en">Coming Soon</p>
+                <p class="case-description">
+                    更多精彩的教学案例正在开发中，敬请期待！
+                </p>
+                <div class="case-tags">
+                    <span class="tag">游戏</span>
+                    <span class="tag">交互</span>
+                </div>
+                <a href="#" class="case-link" style="opacity: 0.5; pointer-events: none;">
+                    敬请期待
+                </a>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer>
+            <p>Made with ❤️ for Learning | <a href="https://github.com" target="_blank">GitHub</a></p>
+            <p style="margin-top: 10px; font-size: 13px;">© 2025 Interactive Learning Hub. All rights reserved.</p>
+        </footer>
     </div>
-    <div id="tooltip"></div>
-    <div id="planet-card">
-        <button class="close-btn" onclick="closePlanetCard()">×</button>
-        <div id="planet-card-content"></div>
-    </div>
-    <button id="pause-btn" onclick="togglePause()">⏸️ 暂停</button>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <script>
-        // 场景、相机、渲染器
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
-
-        // 添加星空背景
-        const starGeometry = new THREE.BufferGeometry();
-        const starVertices = [];
-        for (let i = 0; i < 10000; i++) {
-            const x = (Math.random() - 0.5) * 4000;
-            const y = (Math.random() - 0.5) * 4000;
-            const z = (Math.random() - 0.5) * 4000;
-            starVertices.push(x, y, z);
-        }
-        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-        const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 2 });
-        const stars = new THREE.Points(starGeometry, starMaterial);
-        scene.add(stars);
-
-        // 创建太阳
-        const sunGeometry = new THREE.SphereGeometry(30, 32, 32);
-        const sunMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0xffff00,
-            emissive: 0xffaa00
-        });
-        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        sun.userData = { name: '太阳' };
-        scene.add(sun);
-
-        // 添加太阳光
-        const sunLight = new THREE.PointLight(0xffffff, 2, 1000);
-        sunLight.position.set(0, 0, 0);
-        scene.add(sunLight);
-
-        // 环境光
-        const ambientLight = new THREE.AmbientLight(0x333333);
-        scene.add(ambientLight);
-
-        // 星球详细信息数据
-        const celestialInfo = {
-            '太阳': {
-                name: '太阳',
-                type: '恒星',
-                diameter: '1,392,700 公里',
-                mass: '地球的 333,000 倍',
-                temperature: '表面温度约 5,500°C',
-                composition: '主要由氢和氦组成',
-                description: '太阳是太阳系的中心天体，占有太阳系总质量的99.86%。它是一颗黄矮星，通过核聚变反应产生能量。',
-                features: ['光球层温度约500万度', '每秒钟20万吨氢转化为氦', '寿命约100亿年']
-            },
-            '水星': {
-                name: '水星',
-                type: '类地行星',
-                diameter: '4,879 公里',
-                mass: '地球的 0.055 倍',
-                temperature: '-173°C 至 427°C',
-                orbitalPeriod: '公转周期 88 天',
-                description: '水星是太阳系最小的行星，也是离太阳最近的行星。由于没有大气层，水星表面温度变化很大。',
-                features: ['表面布满陨石坑', '有一个铁核', '几乎没有大气层']
-            },
-            '金星': {
-                name: '金星',
-                type: '类地行星',
-                diameter: '12,104 公里',
-                mass: '地球的 0.815 倍',
-                temperature: '表面温度约 462°C',
-                orbitalPeriod: '公转周期 225 天',
-                description: '金星是从太阳向外的第二颗行星，是太阳系中最热的行星。浓厚的大气层产生强烈的温室效应。',
-                features: ['逆向自转', '浓厚的二氧化碳大气', '最亮的行星']
-            },
-            '地球': {
-                name: '地球',
-                type: '类地行星',
-                diameter: '12,742 公里',
-                mass: '5.972 × 10²⁴ 千克',
-                temperature: '平均温度 15°C',
-                orbitalPeriod: '公转周期 365.25 天',
-                description: '地球是太阳系中唯一确认存在生命的行星。有71%的表面被水覆盖，具有适宜生命的大气层。',
-                features: ['唯一有生命的星球', '卫星：月球', '液态水大量存在']
-            },
-            '火星': {
-                name: '火星',
-                type: '类地行星',
-                diameter: '6,779 公里',
-                mass: '地球的 0.107 倍',
-                temperature: '平均温度 -63°C',
-                orbitalPeriod: '公转周期 687 天',
-                description: '火星被称为"红色星球"，是下一个人类探索目标。表面有太阳系最大的山峰和峡谷。',
-                features: ['表面氧化铁呈红色', '有两颗小卫星', '极冠由冰组成']
-            },
-            '木星': {
-                name: '木星',
-                type: '气态巨行星',
-                diameter: '139,820 公里',
-                mass: '地球的 318 倍',
-                temperature: '云顶温度 -145°C',
-                orbitalPeriod: '公转周期 11.86 年',
-                description: '木星是太阳系最大的行星，主要由氢和氦组成。具有强大的磁场和79颗已知卫星。',
-                features: ['大红斑风暴', '有微弱的行星环', '79颗已知卫星']
-            },
-            '土星': {
-                name: '土星',
-                type: '气态巨行星',
-                diameter: '116,460 公里',
-                mass: '地球的 95 倍',
-                temperature: '云顶温度 -178°C',
-                orbitalPeriod: '公转周期 29.46 年',
-                description: '土星以其壮观的行星环系统而闻名，主要由冰颗粒和尘埃组成。密度比水还小。',
-                features: ['壮观的行星环', '82颗已知卫星', '密度最小的行星']
-            },
-            '天王星': {
-                name: '天王星',
-                type: '冰巨行星',
-                diameter: '50,724 公里',
-                mass: '地球的 14.5 倍',
-                temperature: '云顶温度 -224°C',
-                orbitalPeriod: '公转周期 84 年',
-                description: '天王星是第一颗通过望远镜发现的行星。它的自转轴几乎与公转轨道平面平行。',
-                features: ['横向自转', '有淡蓝色外观', '27颗已知卫星']
-            },
-            '海王星': {
-                name: '海王星',
-                type: '冰巨行星',
-                diameter: '49,244 公里',
-                mass: '地球的 17 倍',
-                temperature: '云顶温度 -214°C',
-                orbitalPeriod: '公转周期 165 年',
-                description: '海王星是太阳系最外侧的行星，通过数学预测而发现。具有太阳系最强的风暴。',
-                features: ['深蓝色外观', '最强风速超过2000km/h', '14颗已知卫星']
-            }
-        };
-
-        // 行星数据: [名称, 半径, 颜色, 轨道半径, 公转速度, 自转速度]
-        const planetsData = [
-            ['水星', 3.5, 0x8c7853, 60, 0.04, 0.01],
-            ['金星', 8, 0xffc649, 85, 0.015, 0.005],
-            ['地球', 8.5, 0x4169e1, 110, 0.01, 0.02],
-            ['火星', 5, 0xcd5c5c, 140, 0.008, 0.018],
-            ['木星', 20, 0xdaa520, 200, 0.002, 0.04],
-            ['土星', 17, 0xf4a460, 260, 0.0009, 0.038],
-            ['天王星', 12, 0x4fd0e0, 320, 0.0004, 0.03],
-            ['海王星', 11, 0x4169e1, 370, 0.0001, 0.032]
-        ];
-
-        const planets = [];
-        const orbits = [];
-
-        // 创建行星和轨道
-        planetsData.forEach(([name, radius, color, orbitRadius, revolutionSpeed, rotationSpeed]) => {
-            // 创建轨道线
-            const orbitGeometry = new THREE.BufferGeometry();
-            const orbitPoints = [];
-            for (let i = 0; i <= 128; i++) {
-                const angle = (i / 128) * Math.PI * 2;
-                orbitPoints.push(
-                    Math.cos(angle) * orbitRadius,
-                    0,
-                    Math.sin(angle) * orbitRadius
-                );
-            }
-            orbitGeometry.setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
-            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x444444 });
-            const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
-            scene.add(orbit);
-            orbits.push(orbit);
-
-            // 创建行星
-            const planetGeometry = new THREE.SphereGeometry(radius, 32, 32);
-            const planetMaterial = new THREE.MeshStandardMaterial({ 
-                color: color,
-                roughness: 0.7,
-                metalness: 0.3
+        // 简单的入场动画
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.case-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 150);
             });
-            const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-            
-            // 创建行星容器用于公转
-            const planetContainer = new THREE.Object3D();
-            planet.position.x = orbitRadius;
-            planetContainer.add(planet);
-            scene.add(planetContainer);
-
-            // 设置行星名称
-            planet.userData = { name: name };
-            
-            planets.push({
-                mesh: planet,
-                container: planetContainer,
-                revolutionSpeed: revolutionSpeed,
-                rotationSpeed: rotationSpeed,
-                orbitRadius: orbitRadius
-            });
-
-            // 为土星添加光环
-            if (name === '土星') {
-                const ringGeometry = new THREE.RingGeometry(radius * 1.5, radius * 2.5, 32);
-                const ringMaterial = new THREE.MeshBasicMaterial({ 
-                    color: 0xc9b181,
-                    side: THREE.DoubleSide,
-                    transparent: true,
-                    opacity: 0.6
-                });
-                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-                ring.rotation.x = Math.PI / 2;
-                planet.add(ring);
-            }
         });
-
-        // 相机位置
-        camera.position.set(0, 600, 0);
-        camera.lookAt(0, 0, 0);
-
-        // 鼠标控制和射线检测
-        let isDragging = false;
-        let previousMousePosition = { x: 0, y: 0 };
-        let cameraAngle = { theta: 0, phi: 0.1 };
-        let cameraDistance = 600;
-        let isPaused = false;
-        
-        // 射线检测器
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        const tooltip = document.getElementById('tooltip');
-        
-        // 收集所有可以检测的星球（太阳 + 行星）
-        const celestialBodies = [sun, ...planets.map(p => p.mesh)];
-
-        renderer.domElement.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            previousMousePosition = { x: e.clientX, y: e.clientY };
-        });
-
-        renderer.domElement.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const deltaX = e.clientX - previousMousePosition.x;
-                const deltaY = e.clientY - previousMousePosition.y;
-                
-                cameraAngle.theta += deltaX * 0.005;
-                cameraAngle.phi += deltaY * 0.005;
-                
-                // 限制垂直角度
-                cameraAngle.phi = Math.max(0.1, Math.min(Math.PI - 0.1, cameraAngle.phi));
-                
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            }
-            
-            // 射线检测悬停
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(celestialBodies);
-            
-            if (intersects.length > 0) {
-                const object = intersects[0].object;
-                if (object.userData.name) {
-                    tooltip.style.display = 'block';
-                    tooltip.style.left = e.clientX + 10 + 'px';
-                    tooltip.style.top = e.clientY - 30 + 'px';
-                    tooltip.textContent = object.userData.name;
-                    document.body.style.cursor = 'pointer';
-                }
-            } else {
-                tooltip.style.display = 'none';
-                document.body.style.cursor = 'default';
-            }
-        });
-
-        renderer.domElement.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
-
-        // 点击事件监听
-        renderer.domElement.addEventListener('click', (e) => {
-            // 只有在未拖动时才响应点击
-            if (!isDragging) {
-                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-                
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(celestialBodies);
-                
-                if (intersects.length > 0) {
-                    const object = intersects[0].object;
-                    if (object.userData.name) {
-                        showPlanetCard(object.userData.name);
-                    }
-                }
-            }
-        });
-
-        renderer.domElement.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            cameraDistance += e.deltaY * 0.2;
-            cameraDistance = Math.max(100, Math.min(1000, cameraDistance));
-        });
-
-        // 显示星球知识卡片
-        function showPlanetCard(planetName) {
-            const info = celestialInfo[planetName];
-            if (!info) return;
-            
-            const card = document.getElementById('planet-card');
-            const content = document.getElementById('planet-card-content');
-            
-            let html = `<h2>${info.name}</h2>`;
-            html += `<div class="info-item"><span class="info-label">类型：</span>${info.type}</div>`;
-            html += `<div class="info-item"><span class="info-label">直径：</span>${info.diameter}</div>`;
-            html += `<div class="info-item"><span class="info-label">质量：</span>${info.mass}</div>`;
-            html += `<div class="info-item"><span class="info-label">温度：</span>${info.temperature}</div>`;
-            
-            if (info.orbitalPeriod) {
-                html += `<div class="info-item"><span class="info-label">公转：</span>${info.orbitalPeriod}</div>`;
-            }
-            if (info.composition) {
-                html += `<div class="info-item"><span class="info-label">组成：</span>${info.composition}</div>`;
-            }
-            
-            html += `<div class="info-item" style="margin-top: 15px;">${info.description}</div>`;
-            
-            if (info.features && info.features.length > 0) {
-                html += `<div class="info-item" style="margin-top: 15px;"><span class="info-label">特点：</span></div>`;
-                html += '<ul style="margin-left: 20px; margin-top: 5px;">';
-                info.features.forEach(feature => {
-                    html += `<li>${feature}</li>`;
-                });
-                html += '</ul>';
-            }
-            
-            content.innerHTML = html;
-            card.classList.add('show');
-        }
-
-        // 关闭星球知识卡片
-        function closePlanetCard() {
-            const card = document.getElementById('planet-card');
-            card.classList.remove('show');
-        }
-
-        // 切换暂停/播放
-        function togglePause() {
-            isPaused = !isPaused;
-            const btn = document.getElementById('pause-btn');
-            if (isPaused) {
-                btn.textContent = '▶️ 播放';
-            } else {
-                btn.textContent = '⏸️ 暂停';
-            }
-        }
-
-        // 窗口大小调整
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // 动画循环
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // 更新相机位置
-            camera.position.x = cameraDistance * Math.sin(cameraAngle.phi) * Math.cos(cameraAngle.theta);
-            camera.position.y = cameraDistance * Math.cos(cameraAngle.phi);
-            camera.position.z = cameraDistance * Math.sin(cameraAngle.phi) * Math.sin(cameraAngle.theta);
-            camera.lookAt(0, 0, 0);
-
-            // 只有在未暂停时才更新星球运动
-            if (!isPaused) {
-                // 太阳自转
-                sun.rotation.y += 0.001;
-
-                // 行星公转和自转
-                planets.forEach(planet => {
-                    // 公转
-                    planet.container.rotation.y += planet.revolutionSpeed;
-                    // 自转
-                    planet.mesh.rotation.y += planet.rotationSpeed;
-                });
-            }
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
     </script>
 </body>
 </html>
