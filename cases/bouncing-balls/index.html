@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物理弹跳球模拟 - Physics Bouncing Balls</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        #canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto 20px;
+            background: #f8f9fa;
+            cursor: crosshair;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #f0f0f0;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        label {
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            width: 100px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .info {
+            background: #e8f4fd;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .info h3 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .info p {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+            margin: 5px 0;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎾 物理弹跳球模拟</h1>
+        <p class="subtitle">Physics Bouncing Balls Simulation - 探索重力、弹性和碰撞的物理世界</p>
+        
+        <canvas id="canvas" width="800" height="400"></canvas>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="gravity">重力:</label>
+                <input type="range" id="gravity" min="0" max="1" step="0.1" value="0.5">
+                <span id="gravityValue">0.5</span>
+            </div>
+            <div class="control-group">
+                <label for="elasticity">弹性:</label>
+                <input type="range" id="elasticity" min="0" max="1" step="0.1" value="0.8">
+                <span id="elasticityValue">0.8</span>
+            </div>
+            <div class="control-group">
+                <label for="friction">摩擦力:</label>
+                <input type="range" id="friction" min="0" max="1" step="0.1" value="0.99">
+                <span id="frictionValue">0.99</span>
+            </div>
+            <button onclick="clearBalls()">🗑️ 清空</button>
+            <button onclick="togglePause()">⏸️ 暂停</button>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="ballCount">0</div>
+                <div class="stat-label">球数量</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="collisionCount">0</div>
+                <div class="stat-label">碰撞次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="fps">60</div>
+                <div class="stat-label">FPS</div>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>🎯 使用说明</h3>
+            <p>• 点击画布任意位置添加新的弹跳球</p>
+            <p>• 调整重力、弹性和摩擦力参数观察不同的物理效果</p>
+            <p>• 球与球之间会发生碰撞，遵循动量守恒定律</p>
+            <p>• 球碰到边界会反弹，弹性系数决定反弹的能量损失</p>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 物理参数
+        let gravity = 0.5;
+        let elasticity = 0.8;
+        let friction = 0.99;
+        let isPaused = false;
+        
+        // 统计
+        let ballCount = 0;
+        let collisionCount = 0;
+        let lastTime = 0;
+        let fps = 60;
+        
+        // 球数组
+        const balls = [];
+        
+        // 颜色数组
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
+        
+        // 球类
+        class Ball {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10;
+                this.radius = Math.random() * 15 + 10;
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+                this.mass = this.radius * 0.1;
+            }
+            
+            update() {
+                if (isPaused) return;
+                
+                // 应用重力
+                this.vy += gravity;
+                
+                // 应用摩擦力
+                this.vx *= friction;
+                this.vy *= friction;
+                
+                // 更新位置
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // 边界碰撞检测
+                if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                    this.vx = -this.vx * elasticity;
+                }
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                    this.vx = -this.vx * elasticity;
+                }
+                if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.vy = -this.vy * elasticity;
+                }
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.vy = -this.vy * elasticity;
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // 添加高光效果
+                ctx.beginPath();
+                ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.3, this.radius * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fill();
+            }
+        }
+        
+        // 球与球碰撞检测
+        function checkBallCollisions() {
+            for (let i = 0; i < balls.length; i++) {
+                for (let j = i + 1; j < balls.length; j++) {
+                    const ball1 = balls[i];
+                    const ball2 = balls[j];
+                    
+                    const dx = ball2.x - ball1.x;
+                    const dy = ball2.y - ball1.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < ball1.radius + ball2.radius) {
+                        // 碰撞发生
+                        collisionCount++;
+                        
+                        // 计算碰撞角度
+                        const angle = Math.atan2(dy, dx);
+                        
+                        // 计算碰撞后的速度
+                        const sin = Math.sin(angle);
+                        const cos = Math.cos(angle);
+                        
+                        // 旋转速度向量
+                        const vx1 = ball1.vx * cos + ball1.vy * sin;
+                        const vy1 = ball1.vy * cos - ball1.vx * sin;
+                        const vx2 = ball2.vx * cos + ball2.vy * sin;
+                        const vy2 = ball2.vy * cos - ball2.vx * sin;
+                        
+                        // 碰撞后的速度（考虑质量和弹性）
+                        const m1 = ball1.mass;
+                        const m2 = ball2.mass;
+                        const newVx1 = ((m1 - m2) * vx1 + 2 * m2 * vx2) / (m1 + m2) * elasticity;
+                        const newVx2 = ((m2 - m1) * vx2 + 2 * m1 * vx1) / (m1 + m2) * elasticity;
+                        
+                        // 旋转回原坐标系
+                        ball1.vx = newVx1 * cos - vy1 * sin;
+                        ball1.vy = vy1 * cos + newVx1 * sin;
+                        ball2.vx = newVx2 * cos - vy2 * sin;
+                        ball2.vy = vy2 * cos + newVx2 * sin;
+                        
+                        // 分离重叠的球
+                        const overlap = ball1.radius + ball2.radius - distance;
+                        const separationX = dx / distance * overlap * 0.5;
+                        const separationY = dy / distance * overlap * 0.5;
+                        
+                        ball1.x -= separationX;
+                        ball1.y -= separationY;
+                        ball2.x += separationX;
+                        ball2.y += separationY;
+                    }
+                }
+            }
+        }
+        
+        // 动画循环
+        function animate(currentTime) {
+            // 计算FPS
+            if (lastTime) {
+                const deltaTime = currentTime - lastTime;
+                fps = Math.round(1000 / deltaTime);
+            }
+            lastTime = currentTime;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制网格背景
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+            
+            // 更新和绘制所有球
+            balls.forEach(ball => {
+                ball.update();
+                ball.draw();
+            });
+            
+            // 检测碰撞
+            checkBallCollisions();
+            
+            // 更新统计信息
+            document.getElementById('ballCount').textContent = balls.length;
+            document.getElementById('collisionCount').textContent = collisionCount;
+            document.getElementById('fps').textContent = fps;
+            
+            requestAnimationFrame(animate);
+        }
+        
+        // 事件监听
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            balls.push(new Ball(x, y));
+        });
+        
+        // 参数控制
+        document.getElementById('gravity').addEventListener('input', (e) => {
+            gravity = parseFloat(e.target.value);
+            document.getElementById('gravityValue').textContent = gravity;
+        });
+        
+        document.getElementById('elasticity').addEventListener('input', (e) => {
+            elasticity = parseFloat(e.target.value);
+            document.getElementById('elasticityValue').textContent = elasticity;
+        });
+        
+        document.getElementById('friction').addEventListener('input', (e) => {
+            friction = parseFloat(e.target.value);
+            document.getElementById('frictionValue').textContent = friction;
+        });
+        
+        // 功能按钮
+        function clearBalls() {
+            balls.length = 0;
+            collisionCount = 0;
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused;
+            const btn = event.target;
+            btn.textContent = isPaused ? '▶️ 播放' : '⏸️ 暂停';
+        }
+        
+        // 启动动画
+        animate();
+    </script>
+</body>
+</html>
