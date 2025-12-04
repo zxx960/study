@@ -291,32 +291,78 @@
             }
         };
 
-        // 行星数据: [名称, 半径, 颜色, 轨道半径, 公转速度, 自转速度]
+        // 行星数据: [名称, 半径, 颜色, 轨道半长轴, 离心率, 公转速度, 自转速度]
+        // 离心率数据来自真实太阳系
         const planetsData = [
-            ['水星', 3.5, 0x8c7853, 60, 0.04, 0.01],
-            ['金星', 8, 0xffc649, 85, 0.015, 0.005],
-            ['地球', 8.5, 0x4169e1, 110, 0.01, 0.02],
-            ['火星', 5, 0xcd5c5c, 140, 0.008, 0.018],
-            ['木星', 20, 0xdaa520, 200, 0.002, 0.04],
-            ['土星', 17, 0xf4a460, 260, 0.0009, 0.038],
-            ['天王星', 12, 0x4fd0e0, 320, 0.0004, 0.03],
-            ['海王星', 11, 0x4169e1, 370, 0.0001, 0.032]
+            ['水星', 3.5, 0x8c7853, 60, 0.206, 0.04, 0.01],
+            ['金星', 8, 0xffc649, 85, 0.007, 0.015, 0.005],
+            ['地球', 8.5, 0x4169e1, 110, 0.017, 0.01, 0.02],
+            ['火星', 5, 0xcd5c5c, 140, 0.093, 0.008, 0.018],
+            ['木星', 20, 0xdaa520, 200, 0.049, 0.002, 0.04],
+            ['土星', 17, 0xf4a460, 260, 0.057, 0.0009, 0.038],
+            ['天王星', 12, 0x4fd0e0, 320, 0.046, 0.0004, 0.03],
+            ['海王星', 11, 0x4169e1, 370, 0.010, 0.0001, 0.032]
         ];
 
         const planets = [];
         const orbits = [];
 
+        // 创建小行星带（火星和木星之间）
+        const asteroidBelt = new THREE.Group();
+        const asteroidCount = 800;
+        const asteroidInnerRadius = 155;
+        const asteroidOuterRadius = 185;
+        
+        for (let i = 0; i < asteroidCount; i++) {
+            // 随机大小的小行星
+            const size = Math.random() * 1.5 + 0.3;
+            const asteroidGeometry = new THREE.SphereGeometry(size, 6, 6);
+            const asteroidMaterial = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                roughness: 0.9,
+                metalness: 0.1
+            });
+            const asteroid = new THREE.Mesh(asteroidGeometry, asteroidMaterial);
+            
+            // 随机分布在环形区域
+            const radius = asteroidInnerRadius + Math.random() * (asteroidOuterRadius - asteroidInnerRadius);
+            const angle = Math.random() * Math.PI * 2;
+            const yOffset = (Math.random() - 0.5) * 10; // 轻微的垂直分布
+            
+            asteroid.position.x = Math.cos(angle) * radius;
+            asteroid.position.y = yOffset;
+            asteroid.position.z = Math.sin(angle) * radius;
+            
+            // 存储运动参数
+            asteroid.userData = {
+                radius: radius,
+                angle: angle,
+                speed: 0.003 + Math.random() * 0.002, // 随机公转速度
+                yOffset: yOffset
+            };
+            
+            asteroidBelt.add(asteroid);
+        }
+        scene.add(asteroidBelt);
+
         // 创建行星和轨道
-        planetsData.forEach(([name, radius, color, orbitRadius, revolutionSpeed, rotationSpeed]) => {
-            // 创建轨道线
+        planetsData.forEach(([name, radius, color, semiMajorAxis, eccentricity, revolutionSpeed, rotationSpeed]) => {
+            // 椭圆参数：a = 半长轴，e = 离心率，b = 半短轴
+            const a = semiMajorAxis;
+            const e = eccentricity;
+            const b = a * Math.sqrt(1 - e * e);
+            const c = a * e; // 焦点到中心的距离
+            
+            // 创建椭圆轨道线
             const orbitGeometry = new THREE.BufferGeometry();
             const orbitPoints = [];
             for (let i = 0; i <= 128; i++) {
                 const angle = (i / 128) * Math.PI * 2;
+                // 椭圆方程，太阳在焦点位置，所以轨道中心偏移 c
                 orbitPoints.push(
-                    Math.cos(angle) * orbitRadius,
+                    Math.cos(angle) * a - c,
                     0,
-                    Math.sin(angle) * orbitRadius
+                    Math.sin(angle) * b
                 );
             }
             orbitGeometry.setAttribute('position', new THREE.Float32BufferAttribute(orbitPoints, 3));
@@ -333,22 +379,26 @@
                 metalness: 0.3
             });
             const planet = new THREE.Mesh(planetGeometry, planetMaterial);
-            
-            // 创建行星容器用于公转
-            const planetContainer = new THREE.Object3D();
-            planet.position.x = orbitRadius;
-            planetContainer.add(planet);
-            scene.add(planetContainer);
-
-            // 设置行星名称
             planet.userData = { name: name };
+            
+            // 初始角度随机
+            const initialAngle = Math.random() * Math.PI * 2;
+            
+            // 设置初始位置（避免行星在原点闪烁）
+            planet.position.x = Math.cos(initialAngle) * a - c;
+            planet.position.z = Math.sin(initialAngle) * b;
+            
+            scene.add(planet);
             
             planets.push({
                 mesh: planet,
-                container: planetContainer,
                 revolutionSpeed: revolutionSpeed,
                 rotationSpeed: rotationSpeed,
-                orbitRadius: orbitRadius
+                semiMajorAxis: a,
+                semiMinorAxis: b,
+                eccentricity: e,
+                focalDistance: c,
+                angle: initialAngle
             });
 
             // 为土星添加光环
@@ -530,12 +580,28 @@
                 // 太阳自转
                 sun.rotation.y += 0.001;
 
-                // 行星公转和自转
+                // 行星公转和自转（椭圆轨道）
                 planets.forEach(planet => {
-                    // 公转
-                    planet.container.rotation.y += planet.revolutionSpeed;
+                    // 更新角度（开普勒第二定律简化：近日点速度快，远日点速度慢）
+                    // 使用真实的椭圆轨道公式计算位置
+                    planet.angle += planet.revolutionSpeed;
+                    
+                    // 椭圆轨道位置计算，太阳在焦点
+                    const x = Math.cos(planet.angle) * planet.semiMajorAxis - planet.focalDistance;
+                    const z = Math.sin(planet.angle) * planet.semiMinorAxis;
+                    
+                    planet.mesh.position.x = x;
+                    planet.mesh.position.z = z;
+                    
                     // 自转
                     planet.mesh.rotation.y += planet.rotationSpeed;
+                });
+                
+                // 小行星带公转
+                asteroidBelt.children.forEach(asteroid => {
+                    asteroid.userData.angle += asteroid.userData.speed;
+                    asteroid.position.x = Math.cos(asteroid.userData.angle) * asteroid.userData.radius;
+                    asteroid.position.z = Math.sin(asteroid.userData.angle) * asteroid.userData.radius;
                 });
             }
 
