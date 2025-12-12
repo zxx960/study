@@ -294,8 +294,9 @@
             const positions = gridGeometry.attributes.position.array;
             const segments = gridSize;
             
+            // 网格旋转后，原始Y轴变成-Z轴，所以需要取反
             const ballX = orbitingBall ? orbitingBall.position.x : 0;
-            const ballZ = orbitingBall ? orbitingBall.position.z : 0;
+            const ballZ = orbitingBall ? -orbitingBall.position.z : 0;
             
             for (let i = 0; i <= segments; i++) {
                 for (let j = 0; j <= segments; j++) {
