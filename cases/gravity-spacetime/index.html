@@ -130,8 +130,8 @@
         </div>
         <div class="control-group">
             <label for="gridSize">网格密度:</label>
-            <input type="range" id="gridSize" min="20" max="80" step="5" value="60">
-            <span id="gridSizeValue">60</span>
+            <input type="range" id="gridSize" min="20" max="100" step="5" value="80">
+            <span id="gridSizeValue">80</span>
         </div>
         <button onclick="resetView()">🔄 重置视角</button>
         <button onclick="toggleAnimation()">⏸️ 暂停</button>
@@ -156,7 +156,7 @@
         
         // 参数
         let mass = 5;
-        let gridSize = 60;
+        let gridSize = 80;
         
         // 轨道小球参数
         const orbitRadius = 4;
@@ -175,7 +175,7 @@
             
             // 相机
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 8, 20);
+            camera.position.set(0, 10, 25);
             camera.lookAt(0, -2, 0);
             
             // 渲染器
@@ -408,7 +408,7 @@
         });
         
         function resetView() {
-            camera.position.set(0, 8, 20);
+            camera.position.set(0, 10, 25);
             camera.lookAt(0, -2, 0);
             controls.reset();
         }
