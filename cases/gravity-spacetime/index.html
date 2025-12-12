@@ -149,7 +149,7 @@
 
     <script>
         let scene, camera, renderer, controls;
-        let gridMesh, centralMass, orbitingBall, orbitTrail;
+        let gridMesh, centralMass, orbitingBall;
         let gridGeometry;
         let isAnimating = true;
         let time = 0;
@@ -161,7 +161,6 @@
         // 轨道小球参数
         const orbitRadius = 4;
         const orbitSpeed = 1.0;
-        const trailPositions = [];
         
         // 小球质量（相对于中心天体）
         const smallBallMass = 0.3;
@@ -252,7 +251,7 @@
             });
             
             centralMass = new THREE.Mesh(geometry, material);
-            centralMass.position.y = -mass * 1.2 / 1.2 + 0.8;
+            centralMass.position.y = -mass * 1.2 / 1.125 + 0.8;
             scene.add(centralMass);
             
             // 添加光晕效果
@@ -309,9 +308,9 @@
                     
                     let deformation = 0;
                     if (distanceToCenter > 0.5) {
-                        deformation = -mass * 1.2 / (distanceToCenter * 0.4 + 1);
+                        deformation = -mass * 1.2 / (distanceToCenter * 0.25 + 1);
                     } else {
-                        deformation = -mass * 1.2 / 1.2;
+                        deformation = -mass * 1.2 / 1.125;
                     }
                     
                     const distanceToBall = Math.sqrt((x - ballX) * (x - ballX) + (z - ballZ) * (z - ballZ));
@@ -339,23 +338,14 @@
             
             orbitingBall = new THREE.Mesh(geometry, material);
             scene.add(orbitingBall);
-            
-            const trailGeometry = new THREE.BufferGeometry();
-            const trailMaterial = new THREE.LineBasicMaterial({
-                color: 0x00aaff,
-                transparent: true,
-                opacity: 0.5
-            });
-            orbitTrail = new THREE.Line(trailGeometry, trailMaterial);
-            scene.add(orbitTrail);
         }
         
         function getGridHeight(x, z) {
             const distance = Math.sqrt(x * x + z * z);
             if (distance > 0.5) {
-                return -mass * 1.2 / (distance * 0.4 + 1);
+                return -mass * 1.2 / (distance * 0.25 + 1);
             } else {
-                return -mass * 1.2 / 1.2;
+                return -mass * 1.2 / 1.125;
             }
         }
         
@@ -367,16 +357,6 @@
             const y = getGridHeight(x, z) + 0.35;
             
             orbitingBall.position.set(x, y, z);
-            
-            trailPositions.push(x, y, z);
-            if (trailPositions.length > 300) {
-                trailPositions.splice(0, 3);
-            }
-            
-            const trailGeometry = new THREE.BufferGeometry();
-            trailGeometry.setAttribute('position', new THREE.Float32BufferAttribute(trailPositions, 3));
-            orbitTrail.geometry.dispose();
-            orbitTrail.geometry = trailGeometry;
         }
         
         function animate() {
@@ -398,7 +378,7 @@
         document.getElementById('mass').addEventListener('input', (e) => {
             mass = parseFloat(e.target.value);
             document.getElementById('massValue').textContent = mass;
-            centralMass.position.y = -mass * 1.2 / 1.2 + 0.8;
+            centralMass.position.y = -mass * 1.2 / 1.125 + 0.8;
         });
         
         document.getElementById('gridSize').addEventListener('input', (e) => {
