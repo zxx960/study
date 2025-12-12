@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>引力时空弯曲 - Gravity Spacetime Curvature</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #0c0c1e 0%, #1a1a3e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            background: rgba(20, 20, 40, 0.9);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            max-width: 1000px;
+            width: 100%;
+            border: 1px solid rgba(100, 100, 255, 0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #a0c4ff;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7b8cde;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        #canvas-container {
+            border: 2px solid #3d3d6b;
+            border-radius: 10px;
+            margin: 0 auto 20px;
+            overflow: hidden;
+            background: #000;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(60, 60, 100, 0.5);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        label {
+            font-weight: 500;
+            color: #a0c4ff;
+            font-size: 14px;
+        }
+        input[type="range"] {
+            width: 100px;
+            accent-color: #667eea;
+        }
+        span {
+            color: #7b8cde;
+            min-width: 30px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .info {
+            background: rgba(40, 40, 80, 0.5);
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .info h3 {
+            color: #a0c4ff;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .info p {
+            color: #7b8cde;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌌 引力时空弯曲</h1>
+        <p class="subtitle">Gravity Spacetime Curvature - 爱因斯坦广义相对论的可视化演示</p>
+        
+        <div id="canvas-container"></div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="mass">质量:</label>
+                <input type="range" id="mass" min="1" max="10" step="0.5" value="5">
+                <span id="massValue">5</span>
+            </div>
+            <div class="control-group">
+                <label for="gridSize">网格密度:</label>
+                <input type="range" id="gridSize" min="20" max="60" step="5" value="40">
+                <span id="gridSizeValue">40</span>
+            </div>
+
+            <button onclick="resetView()">🔄 重置视角</button>
+            <button onclick="toggleAnimation()">⏸️ 暂停</button>
+        </div>
+        
+        <div class="info">
+            <h3>🔬 物理原理</h3>
+            <p>• 根据爱因斯坦的广义相对论，质量会使时空弯曲</p>
+            <p>• 网格代表时空结构，中心的球体代表大质量天体</p>
+            <p>• 质量越大，时空弯曲越明显，形成更深的"引力井"</p>
+            <p>• 拖动鼠标可旋转视角，滚轮可缩放</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        let scene, camera, renderer, controls;
+        let gridMesh, centralMass, orbitingBall, orbitTrail;
+        let gridGeometry;
+        let isAnimating = true;
+        let time = 0;
+        
+        // 参数
+        let mass = 5;
+        let gridSize = 40;
+        
+        // 轨道小球参数
+        const orbitRadius = 4;
+        const orbitSpeed = 1.0;
+        const trailPositions = [];
+        
+        const container = document.getElementById('canvas-container');
+        const width = Math.min(900, window.innerWidth - 80);
+        const height = 500;
+        
+        function init() {
+            // 场景
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050510);
+            
+            // 相机
+            camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+            camera.position.set(0, 8, 20);
+            camera.lookAt(0, -2, 0);
+            
+            // 渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            container.appendChild(renderer.domElement);
+            
+            // 控制器
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 10;
+            controls.maxDistance = 50;
+            
+            // 创建网格
+            createGrid();
+            
+            // 创建中心质量球体
+            createCentralMass();
+            
+            // 创建轨道小球
+            createOrbitingBall();
+            
+            // 添加环境光和点光源
+            const ambientLight = new THREE.AmbientLight(0x404080, 0.5);
+            scene.add(ambientLight);
+            
+            const pointLight = new THREE.PointLight(0xffffff, 1, 100);
+            pointLight.position.set(0, 10, 10);
+            scene.add(pointLight);
+            
+            // 添加星空背景
+            createStars();
+            
+            animate();
+        }
+        
+        function createGrid() {
+            if (gridMesh) {
+                scene.remove(gridMesh);
+                gridGeometry.dispose();
+            }
+            
+            const size = 30;
+            const segments = gridSize;
+            
+            gridGeometry = new THREE.PlaneGeometry(size, size, segments, segments);
+            
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x4466ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            gridMesh = new THREE.Mesh(gridGeometry, material);
+            gridMesh.rotation.x = -Math.PI / 2;
+            scene.add(gridMesh);
+            
+            updateGridDeformation();
+        }
+        
+        function createCentralMass() {
+            if (centralMass) {
+                scene.remove(centralMass);
+            }
+            
+            const geometry = new THREE.SphereGeometry(0.8, 32, 32);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xff6600,
+                emissive: 0xff3300,
+                emissiveIntensity: 0.5,
+                shininess: 100
+            });
+            
+            centralMass = new THREE.Mesh(geometry, material);
+            // 让大质量天体位于网格表面（中心点的弯曲高度）
+            centralMass.position.y = -mass * 1.2 / 1.2 + 0.8;
+            scene.add(centralMass);
+            
+            // 添加光晕效果
+            const glowGeometry = new THREE.SphereGeometry(1.2, 32, 32);
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xff6600,
+                transparent: true,
+                opacity: 0.2
+            });
+            const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+            centralMass.add(glow);
+        }
+        
+        function createStars() {
+            const starsGeometry = new THREE.BufferGeometry();
+            const starPositions = [];
+            
+            for (let i = 0; i < 1000; i++) {
+                const x = (Math.random() - 0.5) * 200;
+                const y = (Math.random() - 0.5) * 200;
+                const z = (Math.random() - 0.5) * 200;
+                starPositions.push(x, y, z);
+            }
+            
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+            
+            const starsMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.2,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+        }
+        
+        function updateGridDeformation() {
+            const positions = gridGeometry.attributes.position.array;
+            const size = 30;
+            const segments = gridSize;
+            
+            for (let i = 0; i <= segments; i++) {
+                for (let j = 0; j <= segments; j++) {
+                    const index = (i * (segments + 1) + j) * 3;
+                    
+                    const x = positions[index];
+                    const z = positions[index + 1];
+                    
+                    // 计算到中心的距离
+                    const distance = Math.sqrt(x * x + z * z);
+                    
+                    // 引力弯曲公式 - 模拟时空弯曲
+                    let deformation = 0;
+                    if (distance > 0.5) {
+                        deformation = -mass * 1.2 / (distance * 0.4 + 1);
+                    } else {
+                        deformation = -mass * 1.2 / 1.2;
+                    }
+                    
+                    positions[index + 2] = deformation;
+                }
+            }
+            
+            gridGeometry.attributes.position.needsUpdate = true;
+        }
+        
+        function createOrbitingBall() {
+            // 创建轨道小球
+            const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00aaff,
+                emissive: 0x0066aa,
+                emissiveIntensity: 0.3,
+                shininess: 80
+            });
+            
+            orbitingBall = new THREE.Mesh(geometry, material);
+            scene.add(orbitingBall);
+            
+            // 创建轨迹线
+            const trailGeometry = new THREE.BufferGeometry();
+            const trailMaterial = new THREE.LineBasicMaterial({
+                color: 0x00aaff,
+                transparent: true,
+                opacity: 0.5
+            });
+            orbitTrail = new THREE.Line(trailGeometry, trailMaterial);
+            scene.add(orbitTrail);
+        }
+        
+        function getGridHeight(x, z) {
+            // 计算给定位置的时空弯曲高度（与网格变形公式一致）
+            const distance = Math.sqrt(x * x + z * z);
+            if (distance > 0.5) {
+                return -mass * 1.2 / (distance * 0.4 + 1);
+            } else {
+                return -mass * 1.2 / 1.2;
+            }
+        }
+        
+        function updateOrbitingBall() {
+            // 计算轨道位置
+            const angle = time * orbitSpeed;
+            const x = Math.cos(angle) * orbitRadius;
+            const z = Math.sin(angle) * orbitRadius;
+            
+            // 计算该位置的时空弯曲高度，让小球贴着网格运动
+            const y = getGridHeight(x, z) + 0.35;
+            
+            orbitingBall.position.set(x, y, z);
+            
+            // 更新轨迹
+            trailPositions.push(x, y, z);
+            if (trailPositions.length > 300) {
+                trailPositions.splice(0, 3);
+            }
+            
+            const trailGeometry = new THREE.BufferGeometry();
+            trailGeometry.setAttribute('position', new THREE.Float32BufferAttribute(trailPositions, 3));
+            orbitTrail.geometry.dispose();
+            orbitTrail.geometry = trailGeometry;
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (isAnimating) {
+                time += 0.05;
+                updateGridDeformation();
+                updateOrbitingBall();
+                
+                // 中心球体轻微脉动
+                const scale = 1 + Math.sin(time * 2) * 0.05;
+                centralMass.scale.set(scale, scale, scale);
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // 控制事件
+        document.getElementById('mass').addEventListener('input', (e) => {
+            mass = parseFloat(e.target.value);
+            document.getElementById('massValue').textContent = mass;
+            // 更新大质量天体位置，保持在网格表面
+            centralMass.position.y = -mass * 1.2 / 1.2 + 0.8;
+        });
+        
+        document.getElementById('gridSize').addEventListener('input', (e) => {
+            gridSize = parseInt(e.target.value);
+            document.getElementById('gridSizeValue').textContent = gridSize;
+            createGrid();
+        });
+        
+
+        
+        function resetView() {
+            camera.position.set(0, 8, 20);
+            camera.lookAt(0, -2, 0);
+            controls.reset();
+        }
+        
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            const btn = event.target;
+            btn.textContent = isAnimating ? '⏸️ 暂停' : '▶️ 播放';
+        }
+        
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            const newWidth = Math.min(900, window.innerWidth - 80);
+            camera.aspect = newWidth / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(newWidth, height);
+        });
+        
+        init();
+    </script>
+</body>
+</html>
