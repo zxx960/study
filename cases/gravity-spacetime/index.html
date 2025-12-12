@@ -159,8 +159,8 @@
         let gridSize = 80;
         
         // 轨道小球参数
-        const orbitRadius = 4;
-        const orbitSpeed = 1.0;
+        const orbitRadius = 6;
+        const orbitSpeed = 0.8;
         
         // 小球质量（相对于中心天体）
         const smallBallMass = 0.3;
@@ -174,7 +174,7 @@
             
             // 相机
             camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 10, 25);
+            camera.position.set(0, 12, 30);
             camera.lookAt(0, -2, 0);
             
             // 渲染器
@@ -251,7 +251,7 @@
             });
             
             centralMass = new THREE.Mesh(geometry, material);
-            centralMass.position.y = -mass * 1.2 / 1.125 + 0.8;
+            centralMass.position.y = -mass * 1.8 / 1.075 + 0.8;
             scene.add(centralMass);
             
             // 添加光晕效果
@@ -308,9 +308,9 @@
                     
                     let deformation = 0;
                     if (distanceToCenter > 0.5) {
-                        deformation = -mass * 1.2 / (distanceToCenter * 0.25 + 1);
+                        deformation = -mass * 1.8 / (distanceToCenter * 0.15 + 1);
                     } else {
-                        deformation = -mass * 1.2 / 1.125;
+                        deformation = -mass * 1.8 / 1.075;
                     }
                     
                     const distanceToBall = Math.sqrt((x - ballX) * (x - ballX) + (z - ballZ) * (z - ballZ));
@@ -343,9 +343,9 @@
         function getGridHeight(x, z) {
             const distance = Math.sqrt(x * x + z * z);
             if (distance > 0.5) {
-                return -mass * 1.2 / (distance * 0.25 + 1);
+                return -mass * 1.8 / (distance * 0.15 + 1);
             } else {
-                return -mass * 1.2 / 1.125;
+                return -mass * 1.8 / 1.075;
             }
         }
         
@@ -378,7 +378,7 @@
         document.getElementById('mass').addEventListener('input', (e) => {
             mass = parseFloat(e.target.value);
             document.getElementById('massValue').textContent = mass;
-            centralMass.position.y = -mass * 1.2 / 1.125 + 0.8;
+            centralMass.position.y = -mass * 1.8 / 1.075 + 0.8;
         });
         
         document.getElementById('gridSize').addEventListener('input', (e) => {
@@ -388,7 +388,7 @@
         });
         
         function resetView() {
-            camera.position.set(0, 10, 25);
+            camera.position.set(0, 12, 30);
             camera.lookAt(0, -2, 0);
             controls.reset();
         }
