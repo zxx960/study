@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>伯努利原理演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #canvas {
+            display: block;
+        }
+        
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+            max-width: 320px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #info-panel h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #4fc3f7;
+        }
+        
+        #info-panel p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 15px;
+        }
+        
+        .formula {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-family: 'Times New Roman', serif;
+            font-size: 18px;
+            color: #81d4fa;
+            margin-bottom: 15px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px 30px;
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-group label {
+            color: white;
+            font-size: 14px;
+        }
+        
+        .control-group input[type="range"] {
+            width: 150px;
+            height: 6px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #4fc3f7;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .value-display {
+            color: #4fc3f7;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        #data-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+            min-width: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #data-panel h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+        
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .data-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .data-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .data-value {
+            font-weight: bold;
+        }
+        
+        .wide-section {
+            color: #ff7043;
+        }
+        
+        .narrow-section {
+            color: #66bb6a;
+        }
+        
+        #legend {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-color.slow {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+        }
+        
+        .legend-color.fast {
+            background: linear-gradient(135deg, #ff5722, #f44336);
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 13px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .instructions p {
+            margin-bottom: 5px;
+        }
+        
+        .instructions p:last-child {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <canvas id="canvas"></canvas>
+        
+        <div id="info-panel">
+            <h1>伯努利原理</h1>
+            <p>伯努利原理描述了流体流动时，流速与压强的关系：流速越快，压强越低；流速越慢，压强越高。</p>
+            <div class="formula">P + ½ρv² + ρgh = 常数</div>
+            <p>观察管道中的粒子：在狭窄处流速加快（红色），在宽阔处流速减慢（蓝色）。</p>
+        </div>
+        
+        <div id="data-panel">
+            <h2>实时数据</h2>
+            <div class="data-row">
+                <span class="data-label">宽管流速:</span>
+                <span class="data-value wide-section" id="wide-velocity">2.0 m/s</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">宽管压强:</span>
+                <span class="data-value wide-section" id="wide-pressure">高</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">窄管流速:</span>
+                <span class="data-value narrow-section" id="narrow-velocity">4.0 m/s</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">窄管压强:</span>
+                <span class="data-value narrow-section" id="narrow-pressure">低</span>
+            </div>
+        </div>
+        
+        <div id="legend">
+            <div class="legend-item">
+                <div class="legend-color slow"></div>
+                <span>低速 / 高压</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color fast"></div>
+                <span>高速 / 低压</span>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <p>🖱️ 拖动旋转视角</p>
+            <p>🔍 滚轮缩放</p>
+            <p>⚙️ 调节下方滑块改变参数</p>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group">
+                <label>流速</label>
+                <input type="range" id="flowSpeed" min="0.5" max="3" step="0.1" value="1.5">
+                <span class="value-display" id="flowSpeedValue">1.5x</span>
+            </div>
+            <div class="control-group">
+                <label>粒子数量</label>
+                <input type="range" id="particleCount" min="50" max="300" step="10" value="150">
+                <span class="value-display" id="particleCountValue">150</span>
+            </div>
+            <div class="control-group">
+                <label>收缩比例</label>
+                <input type="range" id="constriction" min="0.3" max="0.8" step="0.05" value="0.5">
+                <span class="value-display" id="constrictionValue">50%</span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>
